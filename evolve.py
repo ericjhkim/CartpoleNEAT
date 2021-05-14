@@ -12,8 +12,8 @@ import winsound
 
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
+generations = 100
 runs_per_net = 5
-simulation_seconds = 60.0
 input_del = [[0,0,0,0]] # Delayed input by 1 loop cycle (10ms delay)
 
 # Use the NN network phenotype and the discrete actuator force function.
@@ -29,32 +29,29 @@ def eval_genome(genome, config):
         
         # Run the given simulation for up to num_steps time steps.
         fitness = 0.0
-        while sim.t < simulation_seconds:
+        while sim.t < sim.simtime:
+
+            # Break if critical failure
+            if abs(sim.x) >= sim.x_max or abs(sim.theta) >= sim.theta_max:
+                sim.crash = True
+                break
+
+            # Get pole states
             inputs = sim.get_scaled_state()
 
-            # UNCOMMENT THIS BLOCK TO INTRODUCE DELAY
-            # input_del.insert(0,inputs)
-            # current_inputs = input_del[-1]
-            # input_del.pop()
-
+            # Apply inputs to ANN
             action = net.activate(inputs)
             
             # Apply action to the simulated cart-pole
             force = model.discrete_actuator_force(action)
             sim.step(force)
-            
-            # Stop if the network fails to keep the cart within the position or angle limits.
-            # The per-run fitness is the number of time steps the network can balance the pole
-            # without exceeding these limits.
-            if abs(sim.x) >= sim.position_limit or abs(sim.theta) >= sim.angle_limit_radians:
-                break
 
-            fitness = sim.t/(2*abs(sim.dtheta))
+        # Evaluate genome fitness
+        fitness = sim.fitness()
         fitnesses.append(fitness)
     
     # The genome's fitness is its worst performance across all runs.
     return min(fitnesses)
-
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
@@ -73,7 +70,7 @@ def run():
     pop.add_reporter(neat.StdOutReporter(True))
 
     pe = neat.ParallelEvaluator(4, eval_genome)
-    winner = pop.run(pe.evaluate)
+    winner = pop.run(pe.evaluate,generations)
 
     # Save the winner.
     with open('winner', 'wb') as f:

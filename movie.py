@@ -1,7 +1,6 @@
 import gizeh as gz
 import moviepy.editor as mpy
-from train_cart_pole import CartPole
-
+import model
 
 def make_movie(net, force_function, duration_seconds, output_filename):
     w, h = 300, 100
@@ -10,7 +9,7 @@ def make_movie(net, force_function, duration_seconds, output_filename):
     cart = gz.rectangle(scale * 0.5, scale * 0.25, xy=(150, 80), stroke_width=1, fill=(0, 1, 0))
     pole = gz.rectangle(scale * 0.1, scale * 1.0, xy=(150, 55), stroke_width=1, fill=(1, 1, 0))
 
-    sim = CartPole()
+    sim = model.CartPole()
 
     def make_frame(t):
         inputs = sim.get_scaled_state()

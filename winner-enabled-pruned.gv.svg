@@ -21,33 +21,28 @@
 </g>
 <!-- control -->
 <g id="node5" class="node"><title>control</title>
-<ellipse fill="lightblue" stroke="black" cx="99" cy="-29.6985" rx="29.8983" ry="29.8983"/>
-<text text-anchor="middle" x="99" y="-27.4985" font-family="Times New Roman,serif" font-size="9.00">control</text>
+<ellipse fill="lightblue" stroke="black" cx="76" cy="-29.6985" rx="29.8983" ry="29.8983"/>
+<text text-anchor="middle" x="76" y="-27.4985" font-family="Times New Roman,serif" font-size="9.00">control</text>
 </g>
 <!-- dx&#45;&gt;control -->
-<g id="edge3" class="edge"><title>dx&#45;&gt;control</title>
-<path fill="none" stroke="green" stroke-width="0.394595" d="M56.3202,-95.3392C61.4663,-87.5452 69.6111,-75.2096 77.4123,-63.3941"/>
-<polygon fill="green" stroke="green" stroke-width="0.394595" points="80.3952,-65.2286 82.9844,-54.955 74.5536,-61.3716 80.3952,-65.2286"/>
+<g id="edge2" class="edge"><title>dx&#45;&gt;control</title>
+<path fill="none" stroke="green" stroke-width="0.522835" d="M53.771,-95.3392C56.1264,-88.4896 59.6881,-78.1324 63.2746,-67.7032"/>
+<polygon fill="green" stroke="green" stroke-width="0.522835" points="66.5991,-68.7984 66.5413,-58.2037 59.9796,-66.522 66.5991,-68.7984"/>
 </g>
 <!-- theta -->
 <g id="node3" class="node"><title>theta</title>
-<polygon fill="lightgray" stroke="black" points="116.5,-113.397 81.5,-113.397 81.5,-95.397 116.5,-95.397 116.5,-113.397"/>
-<text text-anchor="middle" x="99" y="-102.197" font-family="Times New Roman,serif" font-size="9.00">theta</text>
-</g>
-<!-- theta&#45;&gt;control -->
-<g id="edge1" class="edge"><title>theta&#45;&gt;control</title>
-<path fill="none" stroke="green" stroke-width="0.441393" d="M99,-95.3392C99,-88.9188 99,-79.4165 99,-69.6619"/>
-<polygon fill="green" stroke="green" stroke-width="0.441393" points="102.5,-69.5238 99,-59.5238 95.5001,-69.5239 102.5,-69.5238"/>
+<polygon fill="lightgray" stroke="black" points="173.5,-113.397 138.5,-113.397 138.5,-95.397 173.5,-95.397 173.5,-113.397"/>
+<text text-anchor="middle" x="156" y="-102.197" font-family="Times New Roman,serif" font-size="9.00">theta</text>
 </g>
 <!-- dtheta -->
 <g id="node4" class="node"><title>dtheta</title>
-<polygon fill="lightgray" stroke="black" points="173.5,-113.397 134.5,-113.397 134.5,-95.397 173.5,-95.397 173.5,-113.397"/>
-<text text-anchor="middle" x="154" y="-102.197" font-family="Times New Roman,serif" font-size="9.00">dtheta</text>
+<polygon fill="lightgray" stroke="black" points="120.5,-113.397 81.5,-113.397 81.5,-95.397 120.5,-95.397 120.5,-113.397"/>
+<text text-anchor="middle" x="101" y="-102.197" font-family="Times New Roman,serif" font-size="9.00">dtheta</text>
 </g>
 <!-- dtheta&#45;&gt;control -->
-<g id="edge2" class="edge"><title>dtheta&#45;&gt;control</title>
-<path fill="none" stroke="green" stroke-width="0.413812" d="M147.904,-95.3392C141.814,-87.2893 132.058,-74.3947 122.857,-62.2322"/>
-<polygon fill="green" stroke="green" stroke-width="0.413812" points="125.452,-59.8608 116.627,-53.9976 119.869,-64.0842 125.452,-59.8608"/>
+<g id="edge1" class="edge"><title>dtheta&#45;&gt;control</title>
+<path fill="none" stroke="green" stroke-width="0.524676" d="M98.229,-95.3392C95.8736,-88.4896 92.3119,-78.1324 88.7254,-67.7032"/>
+<polygon fill="green" stroke="green" stroke-width="0.524676" points="92.0204,-66.522 85.4587,-58.2037 85.4009,-68.7984 92.0204,-66.522"/>
 </g>
 </g>
 </svg>

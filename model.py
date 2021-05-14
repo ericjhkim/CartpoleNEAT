@@ -4,26 +4,29 @@ General settings and implementation of the single-pole cart system dynamics.
 
 from math import cos, pi, sin
 import random
+import numpy as np
 
 class CartPole(object):
     
-    gravity = 9.8  # acceleration due to gravity, positive is downward, m/sec^2
-    mcart = 0.1655  # cart mass in kg (battery approx 45 g) (prev. 0.1205)
-    mpole = 0.035  # pole mass in kg (without extenders, 0.019) (chopsticks was 0.025)
-    lpole = 0.18  # half the pole length in meters
-    time_step = 0.01  # time step in seconds
-    # ufric = 0.5 # estimated coefficient of friction
+    simtime = 600                                       # simulation duration (s)
+    gravity = 9.8                                       # acceleration due to gravity, positive is downward, m/sec^2
+    mcart = 0.1655                                      # cart mass in kg (battery approx 45 g) (prev. 0.1205)
+    mpole = 0.035                                       # pole mass in kg (without extenders, 0.019) (chopsticks was 0.025)
+    lpole = 0.18                                        # half the pole length in meters
+    time_step = 0.01                                    # time step in seconds
+    # ufric = 0.5                                         # estimated coefficient of friction
+    crash = False                                       # termination criteria
 
-    def __init__(self, x=None, theta=None, dx=None, dtheta=None, inertia=None, cfric=None, position_limit=1, angle_limit_radians=60 * pi / 180):
-        
-        self.position_limit = position_limit
-        self.angle_limit_radians = angle_limit_radians
+    x_max = 1 # (m)
+    theta_max = np.deg2rad(60) # rads
+
+    def __init__(self, x=None, theta=None, dx=None, dtheta=None, inertia=None, cfric=None):
         
         if x is None:
-            x = random.uniform(-0.5 * self.position_limit, 0.5 * self.position_limit)
+            x = random.uniform(-0.5 * self.x_max, 0.5 * self.x_max)
         #end
         if theta is None:
-            theta = random.uniform(-0.5 * self.angle_limit_radians, 0.5 * self.angle_limit_radians)
+            theta = random.uniform(-0.5 * self.theta_max, 0.5 * self.theta_max)
         #end
         if dx is None:
             dx = random.uniform(-1.0, 1.0)
@@ -31,7 +34,6 @@ class CartPole(object):
         if dtheta is None:
             dtheta = random.uniform(-1.0, 1.0)
         #end
-
         if inertia is None:
             inertia = random.uniform(0.5, 1.5)
         #end
@@ -51,6 +53,12 @@ class CartPole(object):
         
         self.xacc = 0.0
         self.tacc = 0.0
+
+        self.x_list = [self.x]
+        self.theta_list = [self.theta]
+        self.dx_list = [self.dx]
+        self.dtheta_list = [self.dtheta]
+        self.t_list = [self.t]
     
     def step(self, force):
         '''
@@ -91,7 +99,6 @@ class CartPole(object):
         # Linearized EOM (Perez)
         # xacc1 = (force-ufric*self.dx-mp*L*tacc0)/mt
         # tacc1 = mp*L*(xacc1+g*self.theta)/((4*mp*(L**2)/3)+mp*L**2)
-
         
         # Update velocities.
         self.dx += 0.5 * (xacc0 + xacc1) * dt
@@ -106,27 +113,35 @@ class CartPole(object):
         self.tacc = tacc1
         self.xacc = xacc1
         self.t += dt
+
+        self.x_list.append(self.x)
+        self.theta_list.append(self.theta)
+        self.dx_list.append(self.dx)
+        self.dtheta_list.append(self.dtheta)
+        self.t_list.append(self.t)
         
     def get_scaled_state(self):
         '''Get full state, scaled into (approximately) [0, 1].'''
-        return [0.5 * (self.x + self.position_limit) / self.position_limit,
+        return [0.5 * (self.x + self.x_max) / self.x_max,
                 (self.dx + 0.75) / 1.5,
-                0.5 * (self.theta + self.angle_limit_radians) / self.angle_limit_radians,
+                0.5 * (self.theta + self.theta_max) / self.theta_max,
                 (self.dtheta + 1.0) / 2.0]
         
+    def fitness(self):
+        fitness = self.t
+        # if self.crash:
+        #     fitness = -1e6
+        return fitness
+
+def discrete_actuator_force(action):
+    return 10 if action[0] > 0.5 else -10
 
 def continuous_actuator_force(action):
     return -10.0 + 2.0 * action[0]
     
-
 def noisy_continuous_actuator_force(action):
     a = action[0] + random.gauss(0, 0.2)
     return 10.0 if a > 0.5 else -10.0
-    
-
-def discrete_actuator_force(action):
-    return 3 if action[0] > 0.5 else -3
-    
 
 def noisy_discrete_actuator_force(action):
     a = action[0] + random.gauss(0, 0.2)

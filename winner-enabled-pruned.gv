@@ -5,7 +5,6 @@ digraph {
 	theta [fillcolor=lightgray shape=box style=filled]
 	dtheta [fillcolor=lightgray shape=box style=filled]
 	control [fillcolor=lightblue style=filled]
-	theta -> control [color=green penwidth=0.4413932618974241 style=solid]
-	dtheta -> control [color=green penwidth=0.4138117935669283 style=solid]
-	dx -> control [color=green penwidth=0.39459467658881653 style=solid]
+	dtheta -> control [color=green penwidth=0.5246761200811692 style=solid]
+	dx -> control [color=green penwidth=0.5228353547016426 style=solid]
 }
