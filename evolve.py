@@ -3,14 +3,12 @@ Single-pole balancing experiment using a feed-forward neural network.
 """
 
 from __future__ import print_function
-
 import os
 import pickle
-
 import model
-
 import neat
 import visualize
+import winsound
 
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
@@ -28,7 +26,6 @@ def eval_genome(genome, config):
     for runs in range(runs_per_net):
         
         sim = model.CartPole()
-        xtrapoints = 0
         
         # Run the given simulation for up to num_steps time steps.
         fitness = 0.0
@@ -51,17 +48,9 @@ def eval_genome(genome, config):
             # without exceeding these limits.
             if abs(sim.x) >= sim.position_limit or abs(sim.theta) >= sim.angle_limit_radians:
                 break
-            #end
 
-            # if abs(sim.theta) <= 1*180/pi:
-            #     xtrapoints += 1
-            # #end
-
-            # fitness = sim.t*0.01*xtrapoints
             fitness = sim.t/(2*abs(sim.dtheta))
-        #end
         fitnesses.append(fitness)
-    #end
     
     # The genome's fitness is its worst performance across all runs.
     return min(fitnesses)
@@ -70,7 +59,6 @@ def eval_genome(genome, config):
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
         genome.fitness = eval_genome(genome, config)
-    #end
 
 def run():
     # Load the config file, which is assumed to live in
@@ -88,21 +76,23 @@ def run():
     winner = pop.run(pe.evaluate)
 
     # Save the winner.
-    with open('winner-feedforward', 'wb') as f:
+    with open('winner', 'wb') as f:
         pickle.dump(winner, f)
     #end
     print(winner)
+
+    duration = 1000  # milliseconds
+    freq = 640  # Hz
+    winsound.Beep(freq, duration)
 
     # visualize.plot_stats(stats, ylog=True, view=True, filename="feedforward-fitness.svg")
     # visualize.plot_species(stats, view=True, filename="feedforward-speciation.svg")
 
     node_names = {-1: 'x', -2: 'dx', -3: 'theta', -4: 'dtheta', 0: 'control'}
-    # visualize.draw_net(config, winner, True, node_names=node_names)
 
     # visualize.draw_net(config, winner, view=True, node_names=node_names,filename="winner-feedforward.gv")
     # visualize.draw_net(config, winner, view=True, node_names=node_names,filename="winner-feedforward-enabled.gv", show_disabled=False)
-    visualize.draw_net(config, winner, view=True, node_names=node_names,filename="winner-feedforward-enabled-pruned.gv", show_disabled=False, prune_unused=True)
-    
+    visualize.draw_net(config, winner, view=True, node_names=node_names,filename="winner-enabled-pruned.gv", show_disabled=False, prune_unused=True)
 
 if __name__ == '__main__':
     run()

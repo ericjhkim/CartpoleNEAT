@@ -1,5 +1,5 @@
 .vscode
 venv
-my_neat_inv_pend/__pycache__
+__pycache__
 py2ard_comms/myvenv
 py2ard_comms/__pycache__
