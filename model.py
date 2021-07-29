@@ -9,26 +9,24 @@ from numpy import square as sq
 
 class CartPole(object):
     
-    simtime = 600                                       # simulation duration (s)
+    simtime = 5                                        # simulation duration (s)
     gravity = 9.8                                       # acceleration due to gravity, positive is downward, m/sec^2
     mcart = 0.1655                                      # cart mass in kg (battery approx 45 g) (prev. 0.1205)
     mpole = 0.035                                       # pole mass in kg (without extenders, 0.019) (chopsticks was 0.025)
-    lpole = 0.18                                        # half the pole length in meters
+    lpole = 0.18*2                                        # half the pole length in meters
     dt = 0.01                                            # time step in seconds
     time_lag = 0.00                                     # control delay
     ufric = 0.5                                         # estimated coefficient of friction
-    inert = 1.0
+    inert = 1
     crash = False                                       # termination criteria
 
-    f_max = 2                                           # maximum control force
-
-    x_max = 2 # m
+    x_max = 10 # m
     theta_max = 2*pi # rads
-    theta_max = np.deg2rad(60)
-    dx_max = 10 # m/s
-    dtheta_max = 200*pi
+    # theta_max = np.deg2rad(60)
+    dx_max = 100000 # m/s
+    dtheta_max = 200000*pi
 
-    def __init__(self, init, final):
+    def __init__(self, init, final, error):
         
         self.t = 0.0
 
@@ -43,6 +41,12 @@ class CartPole(object):
         self.theta_1 = final[1]
         self.dx_1 = final[2]
         self.dtheta_1 = final[3]
+
+        # Error wiggle room
+        self.e_x = error[0]
+        self.e_theta = error[1]
+        self.e_dx = error[2]
+        self.e_dtheta = error[3]
         
         self.xacc = 0.0
         self.tacc = 0.0
@@ -79,8 +83,8 @@ class CartPole(object):
         self.theta += dt * self.dtheta + 0.5 * tacc0 * dt ** 2
 
         # # Update states
-        # self.x = self.dx*dt
-        # self.theta = self.dtheta*dt
+        # self.x += self.dx*dt
+        # self.theta += self.dtheta*dt
                 
         # Compute new accelerations as given in "Correct equations for the dynamics of the cart-pole system"
         # by Razvan V. Florian (http://florian.io).
@@ -105,9 +109,9 @@ class CartPole(object):
         # Update velocities.
         self.dx += 0.5 * (xacc0 + xacc1) * dt
         if self.dx >= 0:
-            self.dx = min(1.5,self.dx)
+            self.dx = min(self.dx_max,self.dx)
         elif self.dx < 0:
-            self.dx = max(-1.5,self.dx)
+            self.dx = max(-self.dx_max,self.dx)
         
         self.dtheta += 0.5 * (tacc0 + tacc1) * dt
         
@@ -124,12 +128,38 @@ class CartPole(object):
         self.dtheta_list.append(self.dtheta)
         self.t_list.append(self.t)
         self.ctrl_list.append(force)
-        
-    def actuator(self,action): # Based on sigmoid activation function output [0,1]
-        f_action = (action*(2*self.f_max)) -self.f_max
-        
-        return f_action
 
+    def step2(self,force):
+        # Locals for readability.
+        g = self.gravity
+        mp = self.mpole
+        mc = self.mcart
+        mt = mp + mc
+        L = self.lpole*2
+        dt = self.dt
+        
+        # Update states
+        self.x += self.dx*dt
+        self.theta += self.dtheta*dt
+
+        st = sin(self.theta)
+        ct = cos(self.theta)
+
+        # Update derivative states
+        self.dx = (L*mp*st*sq(self.dtheta)+force+mp*g*ct*st)/(mc+mp*(1-sq(ct)))
+        self.dtheta = -(L*mp*ct*st*sq(self.dtheta)+force*ct+mt*g*st)/(L*mc+L*mp*(1-sq(ct)))
+
+        self.t += dt
+
+        # Update lists
+        self.x_list.append(self.x)
+        self.theta_list.append(self.theta)
+        self.dx_list.append(self.dx)
+        self.dtheta_list.append(self.dtheta)
+        self.t_list.append(self.t)
+        self.ctrl_list.append(force)
+
+        
     def get_lag_state(self):
 
         # Locals for readability.
@@ -186,31 +216,16 @@ class CartPole(object):
         return [0.5 * (self.x + self.x_max) / self.x_max,
                 0.5 * (self.theta + self.theta_max) / self.theta_max,
                 (self.dx + 0.75) / 1.5,
-                (self.dtheta + 1.0) / 2.0]
+                (self.dtheta + 1.0) / 2.0,
+                self.t/self.simtime]
         
+    def actuator(self,action,f_max):
+        f_action = (action[0]*(2*f_max)) - f_max
+        return f_action
+
     def fitness(self):
 
-        # Boundary and continuity penalties
-        # x_high = sum([abs(i-self.x_max) for i in self.x_list if i > self.x_max])
-        # theta_high = sum([abs(i-self.theta_max) for i in self.theta_list if i > self.theta_max])
-        # dx_high = sum([abs(i-self.dx_max) for i in self.dx_list if i > self.dx_max])
-        # dtheta_high = sum([abs(i-self.dtheta_max) for i in self.dtheta_list if i > self.dtheta_max])
-
-        # x_low = sum([abs(i+self.x_max) for i in self.x_list if i < -self.x_max])
-        # theta_low = sum([abs(i+self.theta_max) for i in self.theta_list if i < -self.theta_max])
-        # dx_low = sum([abs(i+self.dx_max) for i in self.dx_list if i <- self.dx_max])
-        # dtheta_low = sum([abs(i+self.dtheta_max) for i in self.dtheta_list if i < -self.dtheta_max])
-
-        # x_high /= self.x_max
-        # theta_high /= self.theta_max
-        # dx_high /= self.dx_max
-        # dtheta_high /= self.dthetaa_max
-
-        # x_low /= self.x_max
-        # theta_low /= self.theta_max
-        # dx_low /= self.dx_max
-        # dtheta_low /= self.dthetaa_max
-
+        # Boundary penalties
         x_pen = sum([abs(i-np.sign(i)*self.x_max) for i in self.x_list if abs(i) > self.x_max])
         theta_pen = sum([abs(i-np.sign(i)*self.theta_max) for i in self.theta_list if abs(i) > self.theta_max])
         dx_pen = sum([abs(i-np.sign(i)*self.dx_max) for i in self.dx_list if abs(i) > self.dx_max])
@@ -223,17 +238,53 @@ class CartPole(object):
 
         total_pen = sum(sq(np.array([x_pen,theta_pen,dx_pen,dtheta_pen])))
 
-        fitness = -total_pen/1e5
+        # Final state penalties
+        x_diff = abs(self.x-self.x_1)/(2*self.x_max)
+        theta_diff = np.rad2deg(abs(self.theta-self.theta_1))
+        dx_diff = abs(self.dx-self.dx_1)
+        dtheta_diff = np.rad2deg(abs(self.dtheta-self.theta_1))
 
-        fitness = self.t
+        state_pen = sum(sq(np.array([x_diff,theta_diff,dx_diff,dtheta_diff])))
+
+        # Rewards for being in stable region
+        x_rew = sum([self.dt for i in self.x_list if i <= self.x_1+self.e_x or i >= self.x_1-self.e_x])
+        theta_rew = sum([self.dt for i in self.theta_list if i <= self.theta_1+self.e_theta or i >= self.theta_1-self.e_theta])
+        # dx_rew = sum([self.dt for i in self.dx_list if i <= self.dx_1+self.e_dx or i >= self.dx_1-self.e_dx])
+        # dtheta_rew = sum([self.dt for i in self.dtheta_list if i <= self.dtheta_1+self.e_dtheta or i >= self.dtheta_1-self.e_dtheta])
+
+        # print(x_rew,theta_rew,dx_rew,dtheta_rew)
+        # rewards = sum(sq(np.array([x_rew,theta_rew,dx_rew,dtheta_rew])))
+        rewards = sum(sq(np.array([x_rew,theta_rew])))
+
+        fitness = rewards*0-self.t*(total_pen+state_pen)
+
+        fitness = -self.t
 
         if self.crash:
             fitness = -1e10
 
         return fitness
 
-def discrete_actuator_force(action):
-    return 2 if action[0] > 0.5 else -2
+    def simple_fitness(self):
+
+        # Final state penalties
+        x_diff = abs(self.x-self.x_1)/(2*self.x_max)
+        theta_diff = np.rad2deg(abs(self.theta-self.theta_1))
+        dx_diff = abs(self.dx-self.dx_1)
+        dtheta_diff = np.rad2deg(abs(self.dtheta-self.theta_1))
+
+        state_pen = sum(sq(np.array([x_diff,theta_diff,dx_diff,dtheta_diff])))
+        
+        fitness = -self.t-state_pen
+        # fitness = -self.t
+
+        if self.crash:
+            fitness = -1e10
+
+        return fitness
+
+def discrete_actuator_force(action,force):
+    return force if action[0] > 0.5 else -force
 
 def continuous_actuator_force(action):
     return -10.0 + 2.0 * action[0]

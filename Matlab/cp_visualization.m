@@ -32,14 +32,18 @@ cart = polyshape([0 0 c_w c_w],[0 c_h c_h 0]);
 pole = polyshape([0 0 p_w p_w],[0 p_h p_h 0]);
 set(gcf,'position',get(0,'ScreenSize')); % Fill screensize
 
+txt = text(x_list(1)-0.14,0-0.1,'0');
+txt.FontSize = 30;
+
 for t = 1:length(t_list)
-    
-    axis([-2 2 -1 2]);
+
+    axis([-10 10 -1 2]);
     daspect([1 1 1]);
 
     % Move cartpole
     cart_i = translate(cart,[x(t)-c_w/2 0]);
-    pole_i = rotate(pole,rad2deg(theta(t)-pi),[p_w/2 0]);
+    pole_i = rotate(pole,rad2deg(theta(t)+pi),[p_w/2 0]);
+%     pole_i = rotate(pole,rad2deg(-theta(t)),[p_w/2 0]);
     pole_i = translate(pole_i,[(x(t)-p_w/2) c_h]);
 
     % Plot cartpole
@@ -49,6 +53,11 @@ for t = 1:length(t_list)
     % Hinge
     h = plot(x(t), c_h, '.k', 'MarkerSize',30);
     
+    % Text
+    delete(txt);
+    txt = text(x_list(t)-0.14,0-0.1,string(t_list(t)));
+    txt.FontSize = 30;
+
     pause(dt); % Set framerate
     
     if t < length(t_list)
