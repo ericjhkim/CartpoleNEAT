@@ -15,7 +15,8 @@ def states(sim):
     # plt.plot(sim.t_list,np.ones(len(sim.t_list))*sim.dx_max,'k')
     # plt.plot(sim.t_list,np.ones(len(sim.t_list))*-sim.dx_max,'k')
     # plt.plot(t[0][:-1],np.diff(x[0][:,0])/np.diff(t[0]))
-    plt.xlabel('time')
+    plt.xlabel('Time, s')
+    plt.ylabel('m, m/s')
     plt.legend()
     plt.title('Cart Pole states')
 
@@ -26,7 +27,8 @@ def states(sim):
     plt.plot(sim.t_list,np.rad2deg(sim.dtheta_list),'k-',label='dtheta')
     # plt.plot(sim.t_list,np.ones(len(sim.t_list))*np.rad2deg(sim.dtheta_max),'k')
     # plt.plot(sim.t_list,np.ones(len(sim.t_list))*np.rad2deg(-sim.dtheta_max),'k')
-    plt.xlabel('time')
+    plt.xlabel('Time, s')
+    plt.ylabel('deg, deg/s')
     plt.legend()
     plt.title('Cart Pole states')
 

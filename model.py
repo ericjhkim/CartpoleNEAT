@@ -9,48 +9,61 @@ from numpy import square as sq
 
 class CartPole(object):
     
-    simtime = 5                                        # simulation duration (s)
+    simtime = 60                                        # simulation duration (s)
     gravity = 9.8                                       # acceleration due to gravity, positive is downward, m/sec^2
-    mcart = 0.1655                                      # cart mass in kg (battery approx 45 g) (prev. 0.1205)
-    mpole = 0.035                                       # pole mass in kg (without extenders, 0.019) (chopsticks was 0.025)
-    lpole = 0.18*2                                        # half the pole length in meters
+    mcart = 0.105                                       # cart mass in kg (battery approx 45 g) (prev. 0.1205)
+    mpole = 0.0813                                      # pole mass in kg (without extenders, 0.019) (chopsticks was 0.025)
+    lpole = 0.1                                         # half the pole length in meters
     dt = 0.01                                            # time step in seconds
     time_lag = 0.00                                     # control delay
     ufric = 0.5                                         # estimated coefficient of friction
     inert = 1
     crash = False                                       # termination criteria
 
-    x_max = 10 # m
-    theta_max = 2*pi # rads
-    # theta_max = np.deg2rad(60)
-    dx_max = 100000 # m/s
-    dtheta_max = 200000*pi
+    # Neurocontroller settings
+    x_max = 1 # m
+    theta_max = np.deg2rad(60)
+    dx_max = 10 # m/s
+    dtheta_max = 2*pi
 
-    def __init__(self, init, final, error):
+    f_max = 2
+
+    def __init__(self, x=None, theta=None, dx=None, dtheta=None, inertia=None, cfric=None,):
         
+        if x is None:
+            x = random.uniform(-0.5 * self.x_max, 0.5 * self.x_max)
+        #end
+        if theta is None:
+            theta = random.uniform(-0.5 * self.theta_max, 0.5 * self.theta_max)
+        #end
+        if dx is None:
+            dx = random.uniform(-1.0, 1.0)
+        #end
+        if dtheta is None:
+            dtheta = random.uniform(-1.0, 1.0)
+        #end
+
+        if inertia is None:
+            inertia = random.uniform(0.5, 1.5)
+        #end
+        if cfric is None:
+            cfric = random.uniform(0, 1)
+        #end
+
+        self.inert = inertia
+        self.ufric = cfric
+
         self.t = 0.0
-
-        # Initial states
-        self.x = init[0]
-        self.theta = init[1]
-        self.dx = init[2]
-        self.dtheta = init[3]
-
-        # Final states
-        self.x_1 = final[0]
-        self.theta_1 = final[1]
-        self.dx_1 = final[2]
-        self.dtheta_1 = final[3]
-
-        # Error wiggle room
-        self.e_x = error[0]
-        self.e_theta = error[1]
-        self.e_dx = error[2]
-        self.e_dtheta = error[3]
+        self.x = x
+        self.theta = theta
+        
+        self.dx = dx
+        self.dtheta = dtheta
         
         self.xacc = 0.0
         self.tacc = 0.0
 
+        # Initialize lists
         self.x_list = [self.x]
         self.theta_list = [self.theta]
         self.dx_list = [self.dx]
@@ -129,170 +142,176 @@ class CartPole(object):
         self.t_list.append(self.t)
         self.ctrl_list.append(force)
 
-    def step2(self,force):
-        # Locals for readability.
-        g = self.gravity
-        mp = self.mpole
-        mc = self.mcart
-        mt = mp + mc
-        L = self.lpole*2
-        dt = self.dt
-        
-        # Update states
-        self.x += self.dx*dt
-        self.theta += self.dtheta*dt
+    def get_states(self):
+        return [self.x, self.dx, self.theta, self.dtheta]
 
-        st = sin(self.theta)
-        ct = cos(self.theta)
-
-        # Update derivative states
-        self.dx = (L*mp*st*sq(self.dtheta)+force+mp*g*ct*st)/(mc+mp*(1-sq(ct)))
-        self.dtheta = -(L*mp*ct*st*sq(self.dtheta)+force*ct+mt*g*st)/(L*mc+L*mp*(1-sq(ct)))
-
-        self.t += dt
-
-        # Update lists
-        self.x_list.append(self.x)
-        self.theta_list.append(self.theta)
-        self.dx_list.append(self.dx)
-        self.dtheta_list.append(self.dtheta)
-        self.t_list.append(self.t)
-        self.ctrl_list.append(force)
-
-        
-    def get_lag_state(self):
-
-        # Locals for readability.
-        g = self.gravity
-        mp = self.mpole
-        mc = self.mcart
-        mt = mp + mc
-        L = self.lpole
-        dt = self.dt-self.time_lag
-        ufric = self.ufric
-        I = self.inert*(4*mp*(L**2)/3)
-
-        # Remember acceleration from previous step.
-        tacc0 = self.tacc
-        xacc0 = self.xacc
-
-        x = self.x_list[-1]
-        dx = self.dx_list[-1]
-        theta = self.theta_list[-1]
-        dtheta = self.dtheta_list[-1]
-        
-        try:
-            force = self.ctrl_list[-1]
-        except:
-            force = 0
-
-        st = sin(theta)
-        ct = cos(theta)
-
-        # Nonlinear EOM (Perez)
-        xacc1 = (force-ufric*dx+mp*L*((dtheta**2)*st-tacc0*ct))/mt
-        tacc1 = -mp*L*(xacc1*ct-g*st)/(I+mp*L**2)
-        
-        # Update position/angle.
-        x += dt * dx + 0.5 * xacc0 * dt ** 2
-        theta += dt * dtheta + 0.5 * tacc0 * dt ** 2
-
-        # Update velocities.
-        dx += 0.5 * (xacc0 + xacc1) * dt
-        if dx >= 0:
-            dx = min(1.5,dx)
-        elif dx < 0:
-            dx = max(-1.5,dx)
-        
-        dtheta += 0.5 * (tacc0 + tacc1) * dt
-
-        return [0.5 * (x + self.x_max) / self.x_max,
-                (dx + 0.75) / 1.5,
-                0.5 * (theta + self.theta_max) / self.theta_max,
-                (dtheta + 1.0) / 2.0]
-
-    def get_scaled_state(self):
-        '''Get full state, scaled into (approximately) [0, 1].'''
-        return [0.5 * (self.x + self.x_max) / self.x_max,
-                0.5 * (self.theta + self.theta_max) / self.theta_max,
-                (self.dx + 0.75) / 1.5,
-                (self.dtheta + 1.0) / 2.0,
-                self.t/self.simtime]
-        
-    def actuator(self,action,f_max):
-        f_action = (action[0]*(2*f_max)) - f_max
-        return f_action
+    def discrete_actuator_force(self,action):
+        return self.f_max if action[0] > 0.5 else -self.f_max
 
     def fitness(self):
 
-        # Boundary penalties
-        x_pen = sum([abs(i-np.sign(i)*self.x_max) for i in self.x_list if abs(i) > self.x_max])
-        theta_pen = sum([abs(i-np.sign(i)*self.theta_max) for i in self.theta_list if abs(i) > self.theta_max])
-        dx_pen = sum([abs(i-np.sign(i)*self.dx_max) for i in self.dx_list if abs(i) > self.dx_max])
-        dtheta_pen = sum([abs(i-np.sign(i)*self.dtheta_max) for i in self.dtheta_list if abs(i) > self.dtheta_max])
-
-        x_pen /= self.x_max
-        theta_pen /= self.theta_max
-        dx_pen /= self.dx_max
-        dtheta_pen /= self.dtheta_max
-
-        total_pen = sum(sq(np.array([x_pen,theta_pen,dx_pen,dtheta_pen])))
-
-        # Final state penalties
-        x_diff = abs(self.x-self.x_1)/(2*self.x_max)
-        theta_diff = np.rad2deg(abs(self.theta-self.theta_1))
-        dx_diff = abs(self.dx-self.dx_1)
-        dtheta_diff = np.rad2deg(abs(self.dtheta-self.theta_1))
-
-        state_pen = sum(sq(np.array([x_diff,theta_diff,dx_diff,dtheta_diff])))
-
-        # Rewards for being in stable region
-        x_rew = sum([self.dt for i in self.x_list if i <= self.x_1+self.e_x or i >= self.x_1-self.e_x])
-        theta_rew = sum([self.dt for i in self.theta_list if i <= self.theta_1+self.e_theta or i >= self.theta_1-self.e_theta])
-        # dx_rew = sum([self.dt for i in self.dx_list if i <= self.dx_1+self.e_dx or i >= self.dx_1-self.e_dx])
-        # dtheta_rew = sum([self.dt for i in self.dtheta_list if i <= self.dtheta_1+self.e_dtheta or i >= self.dtheta_1-self.e_dtheta])
-
-        # print(x_rew,theta_rew,dx_rew,dtheta_rew)
-        # rewards = sum(sq(np.array([x_rew,theta_rew,dx_rew,dtheta_rew])))
-        rewards = sum(sq(np.array([x_rew,theta_rew])))
-
-        fitness = rewards*0-self.t*(total_pen+state_pen)
-
-        fitness = -self.t
+        fitness = self.t
 
         if self.crash:
-            fitness = -1e10
+            fitness += -1e5
 
         return fitness
 
-    def simple_fitness(self):
-
-        # Final state penalties
-        x_diff = abs(self.x-self.x_1)/(2*self.x_max)
-        theta_diff = np.rad2deg(abs(self.theta-self.theta_1))
-        dx_diff = abs(self.dx-self.dx_1)
-        dtheta_diff = np.rad2deg(abs(self.dtheta-self.theta_1))
-
-        state_pen = sum(sq(np.array([x_diff,theta_diff,dx_diff,dtheta_diff])))
+    # def step2(self,force): # Simplified EOM
+    #     # Locals for readability.
+    #     g = self.gravity
+    #     mp = self.mpole
+    #     mc = self.mcart
+    #     mt = mp + mc
+    #     L = self.lpole*2
+    #     dt = self.dt
         
-        fitness = -self.t-state_pen
-        # fitness = -self.t
+    #     # Update states
+    #     self.x += self.dx*dt
+    #     self.theta += self.dtheta*dt
 
-        if self.crash:
-            fitness = -1e10
+    #     st = sin(self.theta)
+    #     ct = cos(self.theta)
 
-        return fitness
+    #     # Update derivative states
+    #     self.dx = (L*mp*st*sq(self.dtheta)+force+mp*g*ct*st)/(mc+mp*(1-sq(ct)))
+    #     self.dtheta = -(L*mp*ct*st*sq(self.dtheta)+force*ct+mt*g*st)/(L*mc+L*mp*(1-sq(ct)))
 
-def discrete_actuator_force(action,force):
-    return force if action[0] > 0.5 else -force
+    #     self.t += dt
 
-def continuous_actuator_force(action):
-    return -10.0 + 2.0 * action[0]
+    #     # Update lists
+    #     self.x_list.append(self.x)
+    #     self.theta_list.append(self.theta)
+    #     self.dx_list.append(self.dx)
+    #     self.dtheta_list.append(self.dtheta)
+    #     self.t_list.append(self.t)
+    #     self.ctrl_list.append(force)
+        
+    # def get_lag_state(self):
+
+    #     # Locals for readability.
+    #     g = self.gravity
+    #     mp = self.mpole
+    #     mc = self.mcart
+    #     mt = mp + mc
+    #     L = self.lpole
+    #     dt = self.dt-self.time_lag
+    #     ufric = self.ufric
+    #     I = self.inert*(4*mp*(L**2)/3)
+
+    #     # Remember acceleration from previous step.
+    #     tacc0 = self.tacc
+    #     xacc0 = self.xacc
+
+    #     x = self.x_list[-1]
+    #     dx = self.dx_list[-1]
+    #     theta = self.theta_list[-1]
+    #     dtheta = self.dtheta_list[-1]
+        
+    #     try:
+    #         force = self.ctrl_list[-1]
+    #     except:
+    #         force = 0
+
+    #     st = sin(theta)
+    #     ct = cos(theta)
+
+    #     # Nonlinear EOM (Perez)
+    #     xacc1 = (force-ufric*dx+mp*L*((dtheta**2)*st-tacc0*ct))/mt
+    #     tacc1 = -mp*L*(xacc1*ct-g*st)/(I+mp*L**2)
+        
+    #     # Update position/angle.
+    #     x += dt * dx + 0.5 * xacc0 * dt ** 2
+    #     theta += dt * dtheta + 0.5 * tacc0 * dt ** 2
+
+    #     # Update velocities.
+    #     dx += 0.5 * (xacc0 + xacc1) * dt
+    #     if dx >= 0:
+    #         dx = min(1.5,dx)
+    #     elif dx < 0:
+    #         dx = max(-1.5,dx)
+        
+    #     dtheta += 0.5 * (tacc0 + tacc1) * dt
+
+    #     return [0.5 * (x + self.x_max) / self.x_max,
+    #             (dx + 0.75) / 1.5,
+    #             0.5 * (theta + self.theta_max) / self.theta_max,
+    #             (dtheta + 1.0) / 2.0]
+
+    # def get_scaled_state(self):
+    #     '''Get full state, scaled into (approximately) [0, 1].'''
+    #     return [0.5 * (self.x + self.x_max) / self.x_max,
+    #             0.5 * (self.theta + self.theta_max) / self.theta_max,
+    #             (self.dx + 0.75) / 1.5,
+    #             (self.dtheta + 1.0) / 2.0,
+    #             self.t/self.simtime]
+        
+    # def actuator(self,action):
+    #     f_action = (action[0]*(2*self.f_max)) - self.f_max
+    #     return f_action
+
+#     def fitness(self):
+
+#         # Boundary penalties
+#         x_pen = sum([abs(i-np.sign(i)*self.x_max) for i in self.x_list if abs(i) > self.x_max])
+#         theta_pen = sum([abs(i-np.sign(i)*self.theta_max) for i in self.theta_list if abs(i) > self.theta_max])
+#         dx_pen = sum([abs(i-np.sign(i)*self.dx_max) for i in self.dx_list if abs(i) > self.dx_max])
+#         dtheta_pen = sum([abs(i-np.sign(i)*self.dtheta_max) for i in self.dtheta_list if abs(i) > self.dtheta_max])
+
+#         total_pen = sum(sq(np.array([x_pen,theta_pen,dx_pen,dtheta_pen])))
+
+#         # Final state penalties
+#         x_diff = abs(self.x-self.x_1)/(2*self.x_max)
+#         theta_diff = np.rad2deg(abs(self.theta-self.theta_1))
+#         dx_diff = abs(self.dx-self.dx_1)
+#         dtheta_diff = np.rad2deg(abs(self.dtheta-self.theta_1))
+
+#         state_pen = sum(sq(np.array([x_diff,theta_diff,dx_diff,dtheta_diff])))
+
+#         # # Rewards for being in stable region
+#         # x_rew = sum([self.dt for i in self.x_list if i <= self.x_1+self.e_x or i >= self.x_1-self.e_x])
+#         # theta_rew = sum([self.dt for i in self.theta_list if i <= self.theta_1+self.e_theta or i >= self.theta_1-self.e_theta])
+#         # # dx_rew = sum([self.dt for i in self.dx_list if i <= self.dx_1+self.e_dx or i >= self.dx_1-self.e_dx])
+#         # # dtheta_rew = sum([self.dt for i in self.dtheta_list if i <= self.dtheta_1+self.e_dtheta or i >= self.dtheta_1-self.e_dtheta])
+
+#         # # print(x_rew,theta_rew,dx_rew,dtheta_rew)
+#         # # rewards = sum(sq(np.array([x_rew,theta_rew,dx_rew,dtheta_rew])))
+#         # rewards = sum(sq(np.array([x_rew,theta_rew])))
+
+#         # fitness = rewards*0-self.t*(total_pen+state_pen)
+
+#         fitness = self.t
+
+#         if self.crash:
+#             fitness = -1e10
+
+#         return fitness
+
+#     def simple_fitness(self):
+
+#         # Final state penalties
+#         x_diff = abs(self.x-self.x_1)/(2*self.x_max)
+#         theta_diff = np.rad2deg(abs(self.theta-self.theta_1))
+#         dx_diff = abs(self.dx-self.dx_1)
+#         dtheta_diff = np.rad2deg(abs(self.dtheta-self.theta_1))
+
+#         state_pen = sum(sq(np.array([x_diff,theta_diff,dx_diff,dtheta_diff])))
+        
+#         fitness = -self.t-state_pen
+#         # fitness = -self.t
+
+#         if self.crash:
+#             fitness = -1e10
+
+#         return fitness
+
+# def continuous_actuator_force(action):
+#     return -10.0 + 2.0 * action[0]
     
-def noisy_continuous_actuator_force(action):
-    a = action[0] + random.gauss(0, 0.2)
-    return 10.0 if a > 0.5 else -10.0
+# def noisy_continuous_actuator_force(action):
+#     a = action[0] + random.gauss(0, 0.2)
+#     return 10.0 if a > 0.5 else -10.0
 
-def noisy_discrete_actuator_force(action):
-    a = action[0] + random.gauss(0, 0.2)
-    return 10.0 if a > 0.5 else -10.0
+# def noisy_discrete_actuator_force(action):
+#     a = action[0] + random.gauss(0, 0.2)
+#     return 10.0 if a > 0.5 else -10.0

@@ -5,6 +5,9 @@ close all;
 
 load cp_data.mat
 
+save = 1;
+gifname = 'C:\EK_Projects\CP_NEAT\Matlab\balancing.gif';
+    
 % Data variables
 x = x_list;
 dx = dx_list;
@@ -22,7 +25,7 @@ p_w = 0.04;
 p_h = 0.5;
 
 % Canvas
-figure(1);clf;
+fig = figure(1);clf;
 
 % Ground
 yline(0,'Color',[0.5 0.5 0.5],'LineWidth',2,'alpha',1);
@@ -37,7 +40,7 @@ txt.FontSize = 30;
 
 for t = 1:length(t_list)
 
-    axis([-10 10 -1 2]);
+    axis([-3 3 -1 2]);
     daspect([1 1 1]);
 
     % Move cartpole
@@ -59,6 +62,22 @@ for t = 1:length(t_list)
     txt.FontSize = 30;
 
     pause(dt); % Set framerate
+    
+%     frame = getframe(fig);
+%     
+%     if save == 1
+%         im = frame2im(frame);
+%         [imind,cm] = rgb2ind(im,256);
+%         if t == 1
+%             imwrite(imind,cm,gifname,'gif','DelayTime',dt,'Loopcount',inf);
+%         elseif t == length(t_list)
+%             imwrite(imind,cm,gifname,'gif','DelayTime',3,'WriteMode','append');
+%         else
+%             imwrite(imind,cm,gifname,'gif','DelayTime',dt,'WriteMode','append');
+%         end
+%     elseif save == 2
+%         writeVideo(v,frame);
+%     end
     
     if t < length(t_list)
         delete(c);
