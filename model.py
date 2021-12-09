@@ -26,8 +26,6 @@ class CartPole(object):
     dx_max = 10 # m/s
     dtheta_max = 2*pi
 
-    f_max = 2
-
     def __init__(self, x=None, theta=None, dx=None, dtheta=None, inertia=None, cfric=None,):
         
         if x is None:
@@ -49,6 +47,8 @@ class CartPole(object):
         if cfric is None:
             cfric = random.uniform(0, 1)
         #end
+
+        self.f_max = np.random.uniform(1,30)
 
         self.inert = inertia
         self.ufric = cfric

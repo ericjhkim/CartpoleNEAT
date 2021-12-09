@@ -16,7 +16,7 @@ import matlab
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 generations = 100
-runs_per_net = 1
+runs_per_net = 100
 input_del = [[0,0,0,0]] # Delayed input by 1 loop cycle (10ms delay)
 
 # Initial and final states and error limits (wiggle room)
@@ -55,7 +55,8 @@ def eval_genome(genome, config):
         fitnesses.append(fitness)
     
     # The genome's fitness is its worst performance across all runs.
-    return min(fitnesses)
+    # return min(fitnesses)
+    return sum(fitnesses)
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:

@@ -11,6 +11,7 @@ import neat
 import plots as myplts
 import numpy as np
 import matlab
+import animate
 
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
@@ -60,7 +61,9 @@ while sim.t < testtime:
 print('Pole balanced for ',round(sim.t,1),' of ',testtime,' seconds.')
 
 myplts.states(sim)
-matlab.py2mat(sim,'C:/EK_Projects/CP_NEAT/Matlab/cp_data.mat')
+# matlab.py2mat(sim,'C:/EK_Projects/CP_NEAT/Matlab/cp_data.mat')
+
+animate.animate(sim)
 
 # print()
 # print("Final conditions:")
