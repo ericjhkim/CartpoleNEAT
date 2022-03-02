@@ -5,18 +5,21 @@ Test the performance of the best genome produced by evolve-feedforward.py.
 from __future__ import print_function
 import os
 import pickle
-import model
+import model2 as model
 from movie import make_movie
 import neat
 import plots as myplts
 import numpy as np
 import matlab
 import animate
+import pickle
 
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
+network = "n0"
+savesim = 0
 # load the winner
-with open('C:\\EK_Projects\\CP_NEAT\\winner', 'rb') as f:
+with open(f'./Results/{network}', 'rb') as f:
     c = pickle.load(f)
 
 print('Loaded genome:')
@@ -29,7 +32,10 @@ config_path = os.path.join(local_dir, 'config')
 config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,neat.DefaultSpeciesSet, neat.DefaultStagnation,config_path)
 
 net = neat.nn.FeedForwardNetwork.create(c, config)
-sim = model.CartPole()
+
+newtons = 10                                   # force of pushing the cart
+box = 1                                        # discretization setting (box 1 = less bins, box 2 = more bins)
+sim = model.CartPole(box=box,force=newtons)
 
 # print()
 # print("Initial conditions:")
@@ -40,8 +46,7 @@ sim = model.CartPole()
 # print()
 
 # Run the given simulation for up to 60 seconds.
-testtime = 15
-while sim.t < testtime:
+while sim.t < sim.simtime:
 
     # Break if critical failure
     if abs(sim.x) >= sim.x_max or abs(sim.theta) >= sim.theta_max:
@@ -50,7 +55,7 @@ while sim.t < testtime:
         break
 
     # Get cartpole states
-    inputs = sim.get_states()
+    inputs = sim.get_cnstates()
     # Apply inputs to ANN
     action = net.activate(inputs)
     # Obtain control values
@@ -58,12 +63,17 @@ while sim.t < testtime:
     # Apply control to simulation
     sim.step(control)
 
-print('Pole balanced for ',round(sim.t,1),' of ',testtime,' seconds.')
+print('Pole balanced for ',round(sim.t,1),' of ',sim.simtime,' seconds.')
 
-myplts.states(sim)
+if savesim:
+    with open(f'./Results/{network}_sim', 'wb') as f:
+        pickle.dump(sim, f)
+        print("Saved")
+
+myplts.states_vert(sim)
 # matlab.py2mat(sim,'C:/EK_Projects/CP_NEAT/Matlab/cp_data.mat')
 
-animate.animate(sim)
+# animate.animate(sim)
 
 # print()
 # print("Final conditions:")

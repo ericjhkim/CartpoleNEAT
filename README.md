@@ -20,3 +20,6 @@ Additional notes (can be ignored):
 - "movie.py" can be used to generate a low-quality animation of a particular network's performance
 - "plts.py" simply contains various matplotlib functions for plotting cartpole behaviour
 - "matlab.py" is to save data to a .mat file for MATLAB-related analysis
+
+**********************************
+evolve2 and model2 is the identical model used in the reinforcement learning tests

@@ -1,0 +1,1 @@
+n0 evolved with 1 run/gen, 13 generations, CPU=1.91s, WALL=4.32s

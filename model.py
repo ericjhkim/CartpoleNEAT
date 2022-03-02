@@ -9,7 +9,7 @@ from numpy import square as sq
 
 class CartPole(object):
     
-    simtime = 60                                        # simulation duration (s)
+    simtime = 200                                        # simulation duration (s)
     gravity = 9.8                                       # acceleration due to gravity, positive is downward, m/sec^2
     mcart = 0.105                                       # cart mass in kg (battery approx 45 g) (prev. 0.1205)
     mpole = 0.0813                                      # pole mass in kg (without extenders, 0.019) (chopsticks was 0.025)
@@ -48,7 +48,9 @@ class CartPole(object):
             cfric = random.uniform(0, 1)
         #end
 
-        self.f_max = np.random.uniform(1,30)
+        self.f_max = np.random.uniform(5,15)
+        self.prev_ctrl = 0.0
+        self.prev_ctrl_time = 0.0
 
         self.inert = inertia
         self.ufric = cfric
@@ -147,6 +149,10 @@ class CartPole(object):
 
     def discrete_actuator_force(self,action):
         return self.f_max if action[0] > 0.5 else -self.f_max
+
+    def continuous_motor_force(self,action):
+        force = 2*self.f_max*action[0] - self.f_max
+        return force
 
     def fitness(self):
 
