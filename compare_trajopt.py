@@ -23,6 +23,9 @@ simTO.theta_list = states[:,2]
 simTO.dtheta_list = states[:,3]
 simTO.action_list = np.squeeze(trajopt["control"][0])
 
+print(np.diff(simTO.t_list)[0],simTO.t_list[-1])
+
+simTO.print_report()
 myplts.ip_states(simTO)
 animate.animate(simTO)
 

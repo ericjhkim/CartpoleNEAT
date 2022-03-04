@@ -14,7 +14,7 @@ import matlab
 import animate
 import pickle
 
-network = "n0"
+network = "n1"
 savesim = 0
 folder = "Results_IP"
 

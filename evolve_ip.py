@@ -17,10 +17,10 @@ from time import process_time, perf_counter
 
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
-network = "n0"
+network = "n1"
 folder = "Results_IP"
 
-generations = 200
+generations = 1000
 runs_per_net = 1
 
 # Use the NN network phenotype and the discrete actuator force function.

@@ -41,7 +41,7 @@ class CartPole(object):
     x_margin = 0.5
     dx_margin = 0.5
     theta_margin = np.deg2rad(1.0)
-    dtheta_margin = np.deg2rad(5.0)
+    dtheta_margin = np.deg2rad(3.0)
 
     def __init__(self):
 
@@ -160,7 +160,7 @@ class CartPole(object):
         
         if self.crash:
             fitness += -1e5
-        elif not self.crash and self.done:
-            fitness = 1
+        # elif not self.crash and self.done:
+        #     fitness = 1
 
         return fitness
