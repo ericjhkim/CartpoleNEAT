@@ -13,18 +13,12 @@ import numpy as np
 import plots as myplts
 import matlab
 import animate
-from time import process_time, perf_counter
 
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
-network = "n0"
-folder = "Results_CP"
-
 generations = 100
-runs_per_net = 1
-
-newtons = 10                                   # force of pushing the cart
-box = 1                                        # discretization setting (box 1 = less bins, box 2 = more bins)
+runs_per_net = 100
+input_del = [[0,0,0,0]] # Delayed input by 1 loop cycle (10ms delay)
 
 # Initial and final states and error limits (wiggle room)
 
@@ -37,7 +31,7 @@ def eval_genome(genome, config):
 
     for runs in range(runs_per_net):
         
-        sim = model.CartPole(box=box,force=newtons)
+        sim = model.CartPole()
         
         # Run the given simulation for up to num_steps time steps.
         fitness = 0.0
@@ -49,12 +43,20 @@ def eval_genome(genome, config):
                 break
 
             # Get cartpole states
-            inputs = sim.get_cnstates()
+            inputs = sim.get_states()
             # Apply inputs to ANN
             action = net.activate(inputs)
             # Obtain control values
-            control = sim.discrete_actuator_force(action)
             # Apply control to simulation (artificial lag)
+            # if sim.t - sim.prev_ctrl_time >= 0.05 or sim.t == 0.0:
+            #     control = sim.continuous_motor_force(action)
+            #     sim.step(control)
+            #     sim.prev_ctrl_time = sim.t
+            #     sim.prev_ctrl = control
+            # else:
+            #     sim.step(sim.prev_ctrl)
+
+            control = sim.continuous_motor_force(action)
             sim.step(control)
             
         # Evaluate genome fitness
@@ -63,14 +65,13 @@ def eval_genome(genome, config):
     
     # The genome's fitness is its worst performance across all runs.
     # return min(fitnesses)
-    return min(fitnesses)
+    return sum(fitnesses)
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
         genome.fitness = eval_genome(genome, config)
 
 def run():
-    t_start_real = perf_counter()
     # Load the config file, which is assumed to live in
     # the same directory as this script.
     local_dir = os.path.dirname(__file__)
@@ -82,13 +83,11 @@ def run():
     pop.add_reporter(stats)
     pop.add_reporter(neat.StdOutReporter(True))
 
-    t_start = process_time() # Mark start of evolution
     pe = neat.ParallelEvaluator(4, eval_genome)
     winner = pop.run(pe.evaluate,generations)
-    t_stop = process_time() # Mark end of evolution
 
     # Save the winner.
-    with open(f'./{folder}/{network}', 'wb') as f:
+    with open('winner', 'wb') as f:
         pickle.dump(winner, f)
     #end
     print(winner)
@@ -96,28 +95,22 @@ def run():
     # visualize.plot_stats(stats, ylog=True, view=True, filename="feedforward-fitness.svg")
     # visualize.plot_species(stats, view=True, filename="feedforward-speciation.svg")
 
-    node_names = {-1: 'x', -2: 'theta', -3: 'dx', -4: 'dtheta', 0: 'F'}
+    # node_names = {-1: 'x', -2: 'dx', -3: 'theta', -4: 'dtheta', -5: 't', 0: 'F'}
+    node_names = {-1: 'x', -2: 'dx', -3: 'theta', -4: 'dtheta', 0: 'F'}
 
-    visualize.draw_net(config, winner, view=True, node_names=node_names,filename=f"./{folder}/{network}-enabled-pruned.gv", show_disabled=False, prune_unused=True)
+    # visualize.draw_net(config, winner, view=True, node_names=node_names,filename="winner-feedforward.gv")
+    # visualize.draw_net(config, winner, view=True, node_names=node_names,filename="winner-feedforward-enabled.gv", show_disabled=False)
+    visualize.draw_net(config, winner, view=True, node_names=node_names,filename="winner-enabled-pruned.gv", show_disabled=False, prune_unused=True)
 
     duration = 1000  # milliseconds
     freq = 640  # Hz
     winsound.Beep(freq, duration)
 
     ########################
-    # Stopwatches
-    ########################
-    cputime = round(t_stop-t_start,2)
-    print('CPU time: '+str(cputime)+'s = '+str(round(cputime/60,2))+'m.') # Print CPU time
-    t_stop_real = perf_counter()
-    realtime = round(t_stop_real-t_start_real,2)
-    print('Elapsed time: '+str(realtime)+'s = '+str(round(realtime/60,2))+'m.') # Print real world time
-
-    ########################
     # Simtest
     ########################
     net = neat.nn.FeedForwardNetwork.create(winner, config)
-    sim = model.CartPole(box=box,force=newtons)
+    sim = model.CartPole()
         
     # Run the given simulation for up to num_steps time steps.
     while sim.t < sim.simtime:
@@ -129,15 +122,22 @@ def run():
             break
 
         # Get cartpole states
-        inputs = sim.get_cnstates()
+        inputs = sim.get_states()
         # Apply inputs to ANN
         action = net.activate(inputs)
         # Obtain control values
-        control = sim.discrete_actuator_force(action)
         # Apply control to simulation
+        # if sim.t - sim.prev_ctrl_time >= 0.05 or sim.t == 0.0:
+        #     control = sim.continuous_motor_force(action)
+        #     sim.step(control)
+        #     sim.prev_ctrl_time = sim.t
+        #     sim.prev_ctrl = control
+        # else:
+        #     sim.step(sim.prev_ctrl)
+        control = sim.continuous_motor_force(action)
         sim.step(control)
 
-    myplts.states_vert(sim)
+    myplts.states(sim)
     # matlab.py2mat(sim,'C:/EK_Projects/CP_NEAT/Matlab/cp_data.mat')
     animate.animate(sim)
 

@@ -149,3 +149,21 @@ def states_compare(sim1,sim2):
     fig.legend(handles=legend,loc=(0.758,0.9),fontsize=14)
 
     plt.show()
+
+def ip_states(sim):
+    fig, axs = plt.subplots(3,figsize=(9,12))
+    plt.subplots_adjust(hspace = 0.35)
+
+    axs[0].plot(sim.t_list,sim.x_list,'ro-',label='x')
+    axs[0].plot(sim.t_list,sim.dx_list,'ko-',label='dx')
+
+    axs[1].plot(sim.t_list,np.rad2deg(sim.theta_list),'ro-',label='theta')
+    axs[1].plot(sim.t_list,np.rad2deg(sim.dtheta_list),'ko-',label='dtheta')
+
+    axs[2].plot(sim.t_list,sim.action_list,'o-',label='F')
+
+    for i in range(3):
+        axs[i].set_xlabel("Time, s")
+        axs[i].legend()
+
+    plt.show()

@@ -14,11 +14,9 @@ import matlab
 import animate
 import pickle
 
-# os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
-
 network = "n0"
 savesim = 0
-folder = "Results_CP"
+folder = "Results_IP"
 
 # load the winner
 with open(f'./{folder}/{network}', 'rb') as f:
@@ -34,26 +32,14 @@ config_path = os.path.join(local_dir, 'config')
 config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,neat.DefaultSpeciesSet, neat.DefaultStagnation,config_path)
 
 net = neat.nn.FeedForwardNetwork.create(c, config)
-
-newtons = 10                                   # force of pushing the cart
-box = 1                                        # discretization setting (box 1 = less bins, box 2 = more bins)
-sim = model.CartPole(box=box,force=newtons)
-
-# print()
-# print("Initial conditions:")
-# print("        x = {0:.4f}".format(sim.x))
-# print("    x_dot = {0:.4f}".format(sim.dx))
-# print("    theta = {0:.4f}".format(sim.theta))
-# print("theta_dot = {0:.4f}".format(sim.dtheta))
-# print()
+sim = model.CartPole()
 
 # Run the given simulation for up to 60 seconds.
-while sim.t < sim.simtime:
+while sim.t < sim.simtime and not sim.crash and not sim.done:
 
     # Break if critical failure
-    if abs(sim.x) >= sim.x_max or abs(sim.theta) >= sim.theta_max:
-        sim.crash = True
-        print('FAILED: Out of bounds.')
+    sim.check_done()
+    if sim.crash or sim.done:
         break
 
     # Get cartpole states
@@ -61,29 +47,19 @@ while sim.t < sim.simtime:
     # Apply inputs to ANN
     action = net.activate(inputs)
     # Obtain control values
-    control = sim.discrete_actuator_force(action)
+    control = sim.continuous_actuator_force(action)
     # Apply control to simulation
     sim.step(control)
 
-print('Pole balanced for ',round(sim.t,1),' of ',sim.simtime,' seconds.')
+print(f'Pendulum inverted in {round(sim.t,1)} seconds.')
 
 if savesim:
     with open(f'./{folder}/{network}_sim', 'wb') as f:
         pickle.dump(sim, f)
         print("Saved")
 
-myplts.states_vert(sim)
+sim.print_report()
+myplts.ip_states(sim)
 animate.animate(sim)
 
 # matlab.py2mat(sim,'C:/EK_Projects/CP_NEAT/Matlab/cp_data.mat')
-
-# print()
-# print("Final conditions:")
-# print("        x = {0:.4f}".format(sim.x))
-# print("    x_dot = {0:.4f}".format(sim.dx))
-# print("    theta = {0:.4f}".format(sim.theta))
-# print("theta_dot = {0:.4f}".format(sim.dtheta))
-# print()
-# print("Making movie...")
-
-# make_movie(net, model.discrete_actuator_force, 15.0, "movie.mp4")

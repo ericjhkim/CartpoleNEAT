@@ -22,17 +22,15 @@ config_path = os.path.join(local_dir, 'config')
 config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,neat.DefaultSpeciesSet, neat.DefaultStagnation,config_path)
 
 # load the winner
-foldername = ''
-network = ''
+foldername = 'Results'
+network = 'n0'
 reduced_inputs = 0
-# with open('C:\\EK_Projects\\DS_3DOF\\winner', 'rb') as f:
-with open('C:\\EK_Projects\\CP_NEAT\\winner', 'rb') as f:
-# with open('C:\\EK_Projects\\CartPole_NEAT\\'+network, 'rb') as f:
+with open(f'C:\\EK_Projects\\CP_NEAT\\{foldername}\\{network}', 'rb') as f:
     nn = pickle.load(f)
 #end
 print(nn)
 
-directory = "C:\\EK_Projects\\CP_NEAT\\"+foldername+"\\"
+directory = f"C:\\EK_Projects\\CP_NEAT\\{foldername}\\{network}"
 
 # visualize.plot_stats(stats, ylog=True, view=True, filename="fitness.svg")
 # visualize.plot_species(stats, view=True, filename="speciation.svg")

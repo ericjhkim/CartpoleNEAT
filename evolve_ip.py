@@ -1,11 +1,11 @@
 """
-Single-pole balancing experiment using a feed-forward neural network.
+Evolving neural network for inverted pendulum problem
 """
 
 from __future__ import print_function
 import os
 import pickle
-import model2 as model
+import model_ip as model
 import neat
 import visualize
 import winsound
@@ -18,14 +18,10 @@ from time import process_time, perf_counter
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 network = "n0"
+folder = "Results_IP"
 
-generations = 100
+generations = 200
 runs_per_net = 1
-
-newtons = 10                                   # force of pushing the cart
-box = 1                                        # discretization setting (box 1 = less bins, box 2 = more bins)
-
-# Initial and final states and error limits (wiggle room)
 
 # Use the NN network phenotype and the discrete actuator force function.
 def eval_genome(genome, config):
@@ -36,28 +32,25 @@ def eval_genome(genome, config):
 
     for runs in range(runs_per_net):
         
-        sim = model.CartPole(box=box,force=newtons)
+        sim = model.CartPole()
         
         # Run the given simulation for up to num_steps time steps.
         fitness = 0.0
-        while sim.t < sim.simtime:
+        while sim.t < sim.simtime and not sim.crash and not sim.done:
 
             # Break if critical failure
-            if abs(sim.x) >= sim.x_max or abs(sim.theta) >= sim.theta_max:
-                sim.crash = True
-                break
-
+            sim.check_done()
             # Get cartpole states
             inputs = sim.get_cnstates()
             # Apply inputs to ANN
             action = net.activate(inputs)
             # Obtain control values
-            control = sim.discrete_actuator_force(action)
+            control = sim.continuous_actuator_force(action)
             # Apply control to simulation (artificial lag)
             sim.step(control)
             
         # Evaluate genome fitness
-        fitness = sim.fitness()
+        fitness = sim.fitness_ip()
         fitnesses.append(fitness)
     
     # The genome's fitness is its worst performance across all runs.
@@ -87,7 +80,7 @@ def run():
     t_stop = process_time() # Mark end of evolution
 
     # Save the winner.
-    with open(f'./Results/{network}', 'wb') as f:
+    with open(f'./{folder}/{network}', 'wb') as f:
         pickle.dump(winner, f)
     #end
     print(winner)
@@ -97,7 +90,7 @@ def run():
 
     node_names = {-1: 'x', -2: 'theta', -3: 'dx', -4: 'dtheta', 0: 'F'}
 
-    visualize.draw_net(config, winner, view=True, node_names=node_names,filename=f"{network}-enabled-pruned.gv", show_disabled=False, prune_unused=True)
+    visualize.draw_net(config, winner, view=True, node_names=node_names,filename=f"./{folder}/{network}-enabled-pruned.gv", show_disabled=False, prune_unused=True)
 
     duration = 1000  # milliseconds
     freq = 640  # Hz
@@ -116,29 +109,26 @@ def run():
     # Simtest
     ########################
     net = neat.nn.FeedForwardNetwork.create(winner, config)
-    sim = model.CartPole(box=box,force=newtons)
+    sim = model.CartPole()
         
     # Run the given simulation for up to num_steps time steps.
-    while sim.t < sim.simtime:
+    while sim.t < sim.simtime and not sim.crash and not sim.done:
 
         # Break if critical failure
-        if abs(sim.x) >= sim.x_max or abs(sim.theta) >= sim.theta_max:
-            sim.crash = True
-            print('FAILED: Out of bounds.')
-            break
-
+        sim.check_done()
         # Get cartpole states
         inputs = sim.get_cnstates()
         # Apply inputs to ANN
         action = net.activate(inputs)
         # Obtain control values
-        control = sim.discrete_actuator_force(action)
+        control = sim.continuous_actuator_force(action)
         # Apply control to simulation
         sim.step(control)
 
-    myplts.states_vert(sim)
+    sim.print_report()
+    myplts.ip_states(sim)
+    # animate.animate(sim)
     # matlab.py2mat(sim,'C:/EK_Projects/CP_NEAT/Matlab/cp_data.mat')
-    animate.animate(sim)
 
 if __name__ == '__main__':
     run()

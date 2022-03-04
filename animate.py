@@ -48,7 +48,7 @@ def animate(sim):
 
     #############################################
     # Import and scale data
-    x_unit = width/4.8
+    x_unit = width/(2*2.4)
     xp_list = np.array(sim.x_list)*x_unit + width/2 # x history in tkinter scale
 
     dxp_list = np.diff(xp_list) # Divide by time step later
@@ -74,6 +74,7 @@ def animate(sim):
     new_vertices = rotate(theta_list[0],cart_xi)
     pole = canvas.create_polygon(new_vertices, fill='red')
 
+    dt = np.diff(sim.t_list)[0]
     #############################################
     # Animate frames
     for i in range(0,len(xp_list)):
@@ -85,6 +86,6 @@ def animate(sim):
         canvas.coords(pole,new_vertices)
 
         gui.update()
-        time.sleep(.01)
+        time.sleep(dt)
 
     gui.mainloop()
